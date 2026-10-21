@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: uco-test-api
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/ucotestapi}
+    username: ${DB_USERNAME:ucotest}
+    password: ${DB_PASSWORD:ucotest}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    defer-datasource-initialization: true
+    show-sql: false
+  sql:
+    init:
+      mode: always
+
+app:
+  cors:
+    origenes-permitidos: ${CORS_ORIGENES:http://localhost:4200}
+  demo:
+    usuarios: ${DEMO_USUARIOS:false}
+    clave-ana: ${DEMO_CLAVE_ANA:}
+    clave-carlos: ${DEMO_CLAVE_CARLOS:}
+
+server:
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:false}

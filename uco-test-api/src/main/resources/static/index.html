@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#164e43">
+  <title>Aula · Registro de notas</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Ir al contenido</a>
+  <div id="app"><main id="contenido" class="initial"><span class="brand-mark">a</span><p>Abriendo tu espacio docente…</p></main></div>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="grade-dialog" aria-labelledby="grade-title">
+    <form id="grade-form">
+      <div class="dialog-top"><span class="eyebrow">REGISTRO INDIVIDUAL</span><button type="button" class="icon-button" id="close-dialog" aria-label="Cerrar">×</button></div>
+      <h2 id="grade-title">Registrar nota</h2>
+      <p id="grade-student" class="dialog-name"></p>
+      <p id="grade-context" class="muted"></p>
+      <label for="grade-value">Calificación</label>
+      <div class="grade-input"><input id="grade-value" name="valor" type="text" inputmode="decimal" autocomplete="off" required aria-describedby="grade-help grade-error"><span>/ 5,0</span></div>
+      <p id="grade-help" class="help">Entre 0 y 5, con máximo un decimal. Puedes usar coma o punto.</p>
+      <p class="notice">Verifica la nota antes de guardar. Una nota registrada no se puede editar desde esta pantalla.</p>
+      <p id="grade-error" class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button type="button" class="button secondary" id="cancel-grade">Cancelar</button><button class="button primary" id="save-grade" type="submit">Guardar nota</button></div>
+    </form>
+  </dialog>
+</body>
+</html>
