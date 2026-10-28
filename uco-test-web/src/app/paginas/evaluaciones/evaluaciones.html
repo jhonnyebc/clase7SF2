@@ -1,0 +1,41 @@
+@if (cargando()) {
+  <div class="loading" role="status"><span class="spinner" aria-hidden="true"></span>Cargando tu información…</div>
+} @else if (error()) {
+  <div class="empty"><app-icono nombre="book" /><h3>No pudimos abrir esta vista</h3><p>{{ error() }}</p></div>
+  <div style="text-align:center"><button class="button secondary" type="button" (click)="cargar()">Reintentar</button> <a class="button primary" routerLink="/">Mis grupos</a></div>
+} @else if (grupo(); as grupo) {
+  <nav class="breadcrumbs" aria-label="Ruta de navegación"><a routerLink="/">Mis grupos</a><span aria-hidden="true">/</span><span aria-current="page">{{ grupo.nombre }}</span></nav>
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">EVALUACIONES DEL GRUPO</span>
+      <h1>{{ grupo.nombre }}</h1>
+      <p class="muted">Selecciona una evaluación para consultar o registrar las notas.</p>
+    </div>
+    <a class="button primary" [routerLink]="['/grupo', grupo.id, 'promedios']">Ver promedios <app-icono nombre="arrow" /></a>
+  </div>
+  <div class="summary">
+    <div class="stat"><span class="stat-label">Evaluaciones<app-icono nombre="book" /></span><span class="stat-value">{{ evaluaciones().length }}</span><small>En este grupo</small></div>
+    <div class="stat accent"><span class="stat-label">Abiertas<app-icono nombre="clock" /></span><span class="stat-value">{{ abiertas() }}</span><small>Disponibles para registrar</small></div>
+    <div class="stat"><span class="stat-label">Ponderación<app-icono nombre="check" /></span><span class="stat-value">{{ numero(ponderacion()?.total ?? 0) }}<small> %</small></span><small>{{ ponderacion()?.valida ? 'Distribución completa' : 'Distribución por revisar' }}</small></div>
+  </div>
+  <section class="panel" aria-label="Evaluaciones">
+    <div class="panel-head"><h2>Plan de evaluación</h2><span class="muted help">Peso sobre la nota final</span></div>
+    @for (evaluacion of evaluaciones(); track evaluacion.id) {
+      <article class="evaluation-row">
+        <div><div class="evaluation-name">{{ evaluacion.nombre }}</div><small>Hasta {{ fecha(evaluacion.fechaRegistroHasta) }}</small></div>
+        <div class="weight">{{ evaluacion.porcentaje == null ? '—' : numero(evaluacion.porcentaje) }}<span>%</span></div>
+        <div><span class="badge" [class.green]="evaluacion.vigente" [class.gray]="!evaluacion.vigente">{{ evaluacion.vigente ? 'Abierta' : 'Fuera de plazo' }}</span></div>
+        <a class="button secondary table-action" [routerLink]="['/grupo', grupo.id, 'evaluacion', evaluacion.id]">Ver estudiantes</a>
+      </article>
+    } @empty {
+      <div class="empty"><app-icono nombre="book" /><h3>Sin evaluaciones</h3><p>Este grupo todavía no tiene evaluaciones asignadas.</p></div>
+    }
+  </section>
+  @if (ponderacion(); as ponderacion) {
+    <div class="notice weight-notice" [class.warning]="!ponderacion.valida">
+      <app-icono [nombre]="ponderacion.valida ? 'check' : 'info'" />
+      <div><strong>{{ ponderacion.mensaje }}.</strong>
+        {{ ponderacion.valida ? 'Cada evaluación tiene un peso definido en la calificación del grupo.' : 'No se puede obtener una nota definitiva hasta completar una distribución válida.' }}</div>
+    </div>
+  }
+}

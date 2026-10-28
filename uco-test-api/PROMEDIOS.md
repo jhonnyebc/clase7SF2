@@ -31,7 +31,7 @@ $env:JAVA_HOME = 'C:\Users\Lenovo\.jdks\openjdk-27'
 & 'C:\Program Files\JetBrains\IntelliJ IDEA 2026.2.0.1\plugins\maven-plugin\lib\maven3\bin\mvn.cmd' spring-boot:run
 ```
 
-Abrir http://localhost:8080 y actualizar con Ctrl+F5. Usar las credenciales entregadas anteriormente.
+Iniciar también el frontend (`npm start` en `uco-test-web`), abrir http://localhost:4200 e iniciar sesión con Auth0.
 
 ## Próxima fase
 

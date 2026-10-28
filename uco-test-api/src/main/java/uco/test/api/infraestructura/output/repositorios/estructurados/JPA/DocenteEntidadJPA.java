@@ -20,14 +20,31 @@ public class DocenteEntidadJPA {
     @Column(name = "apellidos", nullable = false)
     private String apellidos;
 
+    // Correo con el que el docente inicia sesion en Auth0.
+    @Column(name = "correo", unique = true)
+    private String correo;
+
     public DocenteEntidadJPA() {
     }
 
     public DocenteEntidadJPA(UUID id, String identificacion, String nombres, String apellidos) {
+        this(id, identificacion, nombres, apellidos, null);
+    }
+
+    public DocenteEntidadJPA(UUID id, String identificacion, String nombres, String apellidos, String correo) {
         this.id = id;
         this.identificacion = identificacion;
         this.nombres = nombres;
         this.apellidos = apellidos;
+        this.correo = correo;
+    }
+
+    public String getCorreo() {
+        return correo;
+    }
+
+    public void setCorreo(String correo) {
+        this.correo = correo;
     }
 
     public UUID getId() {

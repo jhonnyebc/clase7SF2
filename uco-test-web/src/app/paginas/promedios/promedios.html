@@ -1,0 +1,96 @@
+@if (cargando()) {
+  <div class="loading" role="status"><span class="spinner" aria-hidden="true"></span>Cargando tu información…</div>
+} @else if (error()) {
+  <div class="empty"><app-icono nombre="book" /><h3>No pudimos abrir esta vista</h3><p>{{ error() }}</p></div>
+  <div style="text-align:center"><button class="button secondary" type="button" (click)="cargar()">Reintentar</button> <a class="button primary" routerLink="/">Mis grupos</a></div>
+} @else if (grupo(); as grupo) {
+  <nav class="breadcrumbs" aria-label="Ruta de navegación">
+    <a routerLink="/">Mis grupos</a><span aria-hidden="true">/</span>
+    <a [routerLink]="['/grupo', grupo.id]">{{ grupo.nombre }}</a><span aria-hidden="true">/</span>
+    <span aria-current="page">Promedios</span>
+  </nav>
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">EL PROGRESO DEL GRUPO</span>
+      <h1>Promedios ponderados</h1>
+      <p class="muted">{{ grupo.nombre }} · Cada evaluación aporta según su porcentaje.</p>
+    </div>
+    <button class="button secondary" type="button" (click)="cargar()">Actualizar</button>
+  </div>
+  <div class="summary">
+    <div class="stat accent"><span class="stat-label">Con nota definitiva<app-icono nombre="check" /></span><span class="stat-value">{{ definitivas() }}</span><small>Todas las evaluaciones registradas</small></div>
+    <div class="stat"><span class="stat-label">Con acumulado parcial<app-icono nombre="clock" /></span><span class="stat-value">{{ parciales() }}</span><small>Aún tienen evaluaciones pendientes</small></div>
+    <div class="stat"><span class="stat-label">Estudiantes<app-icono nombre="users" /></span><span class="stat-value">{{ estudiantes().length }}</span><small>Integrantes del grupo</small></div>
+  </div>
+  @if (datos()?.ponderacion; as ponderacion) {
+    @if (ponderacion.valida) {
+      <p class="notice"><strong>El acumulado parcial no es la nota definitiva.</strong> Se suman los aportes de las notas registradas, sin convertir las pendientes en cero ni redistribuir sus porcentajes.</p>
+    } @else {
+      <p class="notice warning"><strong>Cálculo no disponible.</strong> {{ ponderacion.mensaje }}. Revisa la distribución de las evaluaciones.</p>
+    }
+  }
+  <section class="panel" aria-label="Promedios de estudiantes">
+    <div class="toolbar">
+      <div class="search">
+        <app-icono nombre="search" />
+        <label class="skip-link" for="buscar-promedio">Buscar estudiante</label>
+        <input id="buscar-promedio" type="search" placeholder="Buscar por nombre o identificación"
+               [value]="busqueda()" (input)="busqueda.set($any($event.target).value)">
+      </div>
+      <label class="skip-link" for="filtro-promedio">Filtrar promedios</label>
+      <select id="filtro-promedio" [value]="filtro()" (change)="filtro.set($any($event.target).value)">
+        <option value="todos">Todos los estados</option>
+        <option value="PARCIAL">Parciales</option>
+        <option value="DEFINITIVA">Definitivas</option>
+        <option value="SIN_NOTAS">Sin notas</option>
+        <option value="CONFIGURACION_INVALIDA">Sin cálculo</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Estudiante</th><th scope="col">Evaluado</th><th scope="col">Acumulado</th><th scope="col">Definitiva</th><th scope="col">Estado</th></tr></thead>
+        <tbody>
+          @for (e of filtrados(); track e.idEstudiante) {
+            <tr class="average-main">
+              <td><div class="student-name"><span class="avatar">{{ iniciales(e.nombres, e.apellidos) }}</span><div><strong>{{ e.nombres }} {{ e.apellidos }}</strong><small>ID {{ e.identificacion }}{{ e.activo ? '' : ' · Inactivo' }}</small></div></div></td>
+              <td><strong>{{ e.porcentajeEvaluado == null ? '—' : numero(e.porcentajeEvaluado) + ' %' }}</strong><div class="help">{{ e.registradas }} de {{ e.evaluaciones.length }} notas</div></td>
+              <td><span class="grade-number">{{ notaDosDecimales(e.acumulado) }}</span></td>
+              <td><span class="grade-number">{{ notaDosDecimales(e.definitiva) }}</span></td>
+              <td><span class="badge" [class.green]="e.estado === 'DEFINITIVA'" [class.amber]="e.estado === 'PARCIAL'" [class.gray]="e.estado !== 'DEFINITIVA' && e.estado !== 'PARCIAL'">{{ etiquetas[e.estado] }}</span></td>
+            </tr>
+            <tr class="average-detail">
+              <td colspan="5">
+                <details>
+                  <summary>Ver cálculo de {{ e.nombres }} {{ e.apellidos }} <span>{{ e.pendientes }} {{ e.pendientes === 1 ? 'pendiente' : 'pendientes' }}</span></summary>
+                  @if (e.evaluaciones.length) {
+                    <table class="detail-table">
+                      <thead><tr><th>Evaluación</th><th>Peso</th><th>Nota</th><th>Aporte</th></tr></thead>
+                      <tbody>
+                        @for (d of e.evaluaciones; track d.idNota) {
+                          <tr>
+                            <td><a [routerLink]="['/grupo', grupo.id, 'evaluacion', d.idNota]">{{ d.nombre }}</a>
+                              @if (d.valor == null) { <small class="detail-pending">{{ d.vigente ? 'Pendiente de registro' : 'Pendiente · fuera de plazo' }}</small> }</td>
+                            <td>{{ d.porcentaje == null ? '—' : numero(d.porcentaje) + ' %' }}</td>
+                            <td>{{ d.valor == null ? 'Pendiente' : numero(d.valor) }}</td>
+                            <td>{{ d.aporte == null ? '—' : aporte(d.aporte) }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                    <p class="detail-formula">Aporte = nota × porcentaje ÷ 100. Los aportes se suman antes de redondear el total.</p>
+                  } @else {
+                    <p class="help">No hay evaluaciones en este grupo.</p>
+                  }
+                </details>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5"><div class="empty"><app-icono nombre="book" /><h3>Sin resultados</h3><p>No hay estudiantes que coincidan con esta búsqueda o filtro.</p></div></td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer"><span role="status">{{ filtrados().length }} de {{ estudiantes().length }} estudiantes</span><span>Escala de 0 a 5 · Total redondeado a dos decimales</span></div>
+  </section>
+  <div class="tip"><app-icono nombre="info" /><p>Abre el detalle de un estudiante para ver cada aporte. Las evaluaciones fuera de plazo siguen formando parte de la nota final.</p></div>
+}

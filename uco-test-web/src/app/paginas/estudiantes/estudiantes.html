@@ -1,0 +1,104 @@
+@if (cargando()) {
+  <div class="loading" role="status"><span class="spinner" aria-hidden="true"></span>Cargando tu información…</div>
+} @else if (error()) {
+  <div class="empty"><app-icono nombre="book" /><h3>No pudimos abrir esta vista</h3><p>{{ error() }}</p></div>
+  <div style="text-align:center"><button class="button secondary" type="button" (click)="cargar()">Reintentar</button> <a class="button primary" routerLink="/">Mis grupos</a></div>
+} @else if (grupo(); as grupo) {
+  @if (evaluacion(); as evaluacion) {
+    <nav class="breadcrumbs" aria-label="Ruta de navegación">
+      <a routerLink="/">Mis grupos</a><span aria-hidden="true">/</span>
+      <a [routerLink]="['/grupo', grupo.id]">{{ grupo.nombre }}</a><span aria-hidden="true">/</span>
+      <span aria-current="page">{{ evaluacion.nombre }}</span>
+    </nav>
+    <div class="page-heading">
+      <div>
+        <span class="eyebrow">REGISTRO DE CALIFICACIONES</span>
+        <h1>{{ evaluacion.nombre }}</h1>
+        <p class="muted">{{ grupo.nombre }} <span aria-hidden="true">·</span>
+          {{ evaluacion.porcentaje == null ? 'Porcentaje sin asignar' : numero(evaluacion.porcentaje) + ' % de la nota final' }}
+          <span aria-hidden="true">·</span> Cierre: {{ fecha(evaluacion.fechaRegistroHasta) }}</p>
+      </div>
+      <div class="heading-actions">
+        <a class="button secondary" [routerLink]="['/grupo', grupo.id, 'promedios']">Ver promedios</a>
+        <button class="button secondary" type="button" (click)="cargar()">Actualizar</button>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="stat"><span class="stat-label">Estudiantes<app-icono nombre="users" /></span><span class="stat-value">{{ estudiantes().length }}</span><small>Integrantes del grupo</small></div>
+      <div class="stat accent"><span class="stat-label">Registradas<app-icono nombre="check" /></span><span class="stat-value">{{ registradas() }}</span><small>Notas guardadas</small></div>
+      <div class="stat"><span class="stat-label">Pendientes<app-icono nombre="clock" /></span><span class="stat-value">{{ pendientes() }}</span><small>Estudiantes activos sin nota</small></div>
+    </div>
+    @if (!evaluacion.vigente) {
+      <p class="notice warning">Esta evaluación está fuera del plazo de registro. Puedes consultar las notas, pero no guardar nuevas calificaciones.</p>
+    }
+    <section class="panel" aria-label="Estudiantes">
+      <div class="toolbar">
+        <div class="search">
+          <app-icono nombre="search" />
+          <label class="skip-link" for="buscar-estudiante">Buscar estudiante</label>
+          <input id="buscar-estudiante" type="search" placeholder="Buscar por nombre o identificación"
+                 [value]="busqueda()" (input)="busqueda.set($any($event.target).value)">
+        </div>
+        <label class="skip-link" for="filtro">Filtrar estudiantes</label>
+        <select id="filtro" [value]="filtro()" (change)="filtro.set($any($event.target).value)">
+          <option value="todos">Todos los estados</option>
+          <option value="pendientes">Pendientes</option>
+          <option value="registradas">Registradas</option>
+          <option value="inactivos">Inactivos</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Estudiante</th><th scope="col">Estado</th><th scope="col">Nota</th><th scope="col">Registro</th></tr></thead>
+          <tbody>
+            @for (e of filtrados(); track e.idEstudiante) {
+              <tr [class.row-disabled]="!e.activo">
+                <td><div class="student-name"><span class="avatar">{{ iniciales(e.nombres, e.apellidos) }}</span><div><strong>{{ e.nombres }} {{ e.apellidos }}</strong><small>ID {{ e.identificacion }}</small></div></div></td>
+                <td><span class="badge" [class.gray]="!e.activo" [class.green]="e.activo && e.registrada" [class.amber]="e.activo && !e.registrada">{{ !e.activo ? 'Inactivo' : e.registrada ? 'Registrada' : 'Pendiente' }}</span></td>
+                <td><span class="grade-number">{{ e.registrada && e.valor != null ? notaUnDecimal(e.valor) : '—' }}</span></td>
+                <td>
+                  @if (puedeRegistrar(e)) {
+                    <button class="button secondary table-action" type="button" (click)="abrirRegistro(e)" [attr.aria-label]="'Registrar nota de ' + e.nombres + ' ' + e.apellidos">Registrar nota</button>
+                  } @else {
+                    <span class="help">{{ e.registrada ? 'Guardada' : !e.activo ? 'Estudiante inactivo' : 'Plazo cerrado' }}</span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4"><div class="empty"><app-icono nombre="book" />
+                @if (estudiantes().length) { <h3>No encontramos coincidencias</h3><p>Prueba con otro nombre o cambia el filtro.</p> }
+                @else { <h3>Sin estudiantes</h3><p>Este grupo todavía no tiene estudiantes.</p> }
+              </div></td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer"><span role="status">{{ filtrados().length }} de {{ estudiantes().length }} estudiantes</span><span>Escala de 0,0 a 5,0 · Un decimal</span></div>
+    </section>
+  }
+}
+
+<dialog #dialogo aria-labelledby="titulo-registro" (cancel)="evitarCierreMientrasGuarda($event)">
+  <form (submit)="guardar($event)">
+    <div class="dialog-top"><span class="eyebrow">REGISTRO INDIVIDUAL</span><button type="button" class="icon-button" (click)="cerrarRegistro()" [disabled]="guardando()" aria-label="Cerrar">×</button></div>
+    <h2 id="titulo-registro">Registrar nota</h2>
+    <p class="dialog-name">{{ seleccionado()?.nombres }} {{ seleccionado()?.apellidos }}</p>
+    <p class="muted">{{ grupo()?.nombre }} · {{ evaluacion()?.nombre }}</p>
+    <label for="valor-nota">Calificación</label>
+    <div class="grade-input">
+      <input #campoNota id="valor-nota" type="text" inputmode="decimal" autocomplete="off" required
+             aria-describedby="ayuda-nota error-nota" [disabled]="guardando()"
+             [value]="valorTexto()" (input)="valorTexto.set($any($event.target).value)">
+      <span>/ 5,0</span>
+    </div>
+    <p id="ayuda-nota" class="help">Entre 0 y 5, con máximo un decimal. Puedes usar coma o punto.</p>
+    <p class="notice">Verifica la nota antes de guardar. Una nota registrada no se puede editar desde esta pantalla.</p>
+    @if (errorDialogo()) {
+      <p id="error-nota" class="form-error" role="alert">{{ errorDialogo() }}</p>
+    }
+    <div class="dialog-actions">
+      <button type="button" class="button secondary" (click)="cerrarRegistro()" [disabled]="guardando()">Cancelar</button>
+      <button class="button primary" type="submit" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar nota' }}</button>
+    </div>
+  </form>
+</dialog>

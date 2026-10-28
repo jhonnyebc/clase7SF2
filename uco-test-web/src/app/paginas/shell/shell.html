@@ -1,0 +1,39 @@
+@if (sesion.docente(); as docente) {
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">a</span><div><span class="brand-word">aula</span><small>ESPACIO DOCENTE</small></div></div>
+      <nav aria-label="Navegación principal">
+        <p class="nav-label">MI ESPACIO</p>
+        <a routerLink="/" class="nav-link"><app-icono nombre="grid" /> Mis grupos</a>
+      </nav>
+      <div class="sidebar-note"><div class="mini-line"></div>Una evaluación a la vez.<br>Un aprendizaje que avanza.</div>
+    </aside>
+    <div class="main-area">
+      <header class="topbar">
+        <span class="topbar-label">Registro académico</span>
+        <div class="topbar-right">
+          <div class="profile">
+            <span class="avatar">{{ iniciales(docente.nombres, docente.apellidos) }}</span>
+            <div><b>{{ docente.nombres }} {{ docente.apellidos }}</b><small>Docente</small></div>
+          </div>
+          <button class="logout" type="button" (click)="sesion.cerrarSesion()">Cerrar sesión</button>
+        </div>
+      </header>
+      <main id="contenido" class="content" tabindex="-1">
+        <router-outlet />
+      </main>
+    </div>
+  </div>
+} @else if (sesion.error()) {
+  <main id="contenido" class="initial">
+    <span class="brand-mark">a</span>
+    <div class="empty">
+      <h3>No pudimos abrir tu espacio docente</h3>
+      <p>{{ sesion.error() }}</p>
+      <button class="button secondary" type="button" (click)="sesion.cargar()">Reintentar</button>
+      <button class="button primary" type="button" (click)="sesion.cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </main>
+} @else {
+  <main id="contenido" class="initial"><span class="brand-mark">a</span><p>Abriendo tu espacio docente…</p></main>
+}

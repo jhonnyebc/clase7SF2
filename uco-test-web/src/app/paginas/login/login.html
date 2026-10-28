@@ -1,0 +1,28 @@
+<main id="contenido" class="login">
+  <section class="login-story" aria-label="Aula, espacio docente">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">a</span><div><span class="brand-word">aula</span><small>ESPACIO DOCENTE</small></div></div>
+    <div class="story-body">
+      <div class="story-line"></div>
+      <span class="eyebrow">UN ESPACIO PARA ENSEÑAR</span>
+      <h1>Cada nota,<br>en su lugar.</h1>
+      <p>Tus grupos, tus evaluaciones y el progreso de tus estudiantes. Todo en un mismo espacio.</p>
+    </div>
+    <div class="story-foot"><span>0—5</span><span>Registra con claridad.<br>Acompaña cada aprendizaje.</span></div>
+    <div class="orbit" aria-hidden="true"></div>
+  </section>
+  <section class="login-side">
+    <div class="login-box">
+      <span class="eyebrow">BIENVENIDO A AULA</span>
+      <h2>Tu clase empieza aquí.</h2>
+      <p class="muted">Ingresa con tu cuenta de docente. El inicio de sesión se hace de forma segura con Auth0.</p>
+      @if (error()) {
+        <p class="form-error" role="alert">{{ error() }}</p>
+      }
+      <button class="button primary" type="button" (click)="ingresar()" [disabled]="redirigiendo()">
+        @if (redirigiendo()) { Abriendo Auth0… } @else { Iniciar sesión <app-icono nombre="arrow" /> }
+      </button>
+      <div class="login-caption"><app-icono nombre="lock" /><span>Acceso exclusivo a tus grupos y evaluaciones.</span></div>
+    </div>
+    <p class="login-footer">Aula · Registro académico</p>
+  </section>
+</main>

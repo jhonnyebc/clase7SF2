@@ -1,57 +1,89 @@
 package uco.test.api.infraestructura.input.configuracion;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.userdetails.*;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.converter.RsaKeyConverters;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
+import org.springframework.security.oauth2.jwt.JwtClaimValidator;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
-import uco.test.api.infraestructura.output.repositorios.estructurados.UsuarioRepositorioJPA;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 
 @Configuration
 @EnableMethodSecurity
 public class SeguridadConfiguracion {
-    @Bean
-    PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
-
-    @Bean
-    UserDetailsService usuarios(UsuarioRepositorioJPA repositorio) {
-        return nombre -> {
-            var usuario = repositorio.findByUsuario(nombre)
-                    .orElseThrow(() -> new UsernameNotFoundException("Credenciales incorrectas"));
-            return User.withUsername(usuario.getUsuario()).password(usuario.getClaveHash()).roles("DOCENTE").build();
-        };
-    }
 
     @Bean
     SecurityFilterChain seguridad(HttpSecurity http) throws Exception {
         http.cors(cors -> {})
+            // API sin estado: cada peticion trae su token de Auth0 en la cabecera Authorization,
+            // no hay cookies de sesion, por eso CSRF no aplica.
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(sesion -> sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(rutas -> rutas
-                .requestMatchers("/", "/index.html", "/app.js", "/styles.css", "/favicon.svg",
-                        "/api/v1/auth/csrf", "/api/v1/auth/login", "/error").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated())
+            .oauth2ResourceServer(recurso -> recurso
+                .jwt(jwt -> {})
+                .authenticationEntryPoint((req, res, ex) -> responder(res, 401, "Debes iniciar sesion"))
+                .accessDeniedHandler((req, res, ex) -> responder(res, 403, motivo(ex))))
             .exceptionHandling(errores -> errores
                 .authenticationEntryPoint((req, res, ex) -> responder(res, 401, "Debes iniciar sesion"))
-                .accessDeniedHandler((req, res, ex) -> responder(res, 403, "Acceso no permitido o token CSRF invalido")))
-            .requestCache(cache -> cache.disable())
-            .formLogin(login -> login.loginProcessingUrl("/api/v1/auth/login")
-                .usernameParameter("usuario").passwordParameter("contrasena")
-                .successHandler((req, res, auth) -> responder(res, 200, "Sesion iniciada"))
-                .failureHandler((req, res, ex) -> responder(res, 401, "Credenciales incorrectas")))
-            .logout(logout -> logout.logoutUrl("/api/v1/auth/logout")
-                .invalidateHttpSession(true).clearAuthentication(true).deleteCookies("JSESSIONID")
-                .logoutSuccessHandler((req, res, auth) -> responder(res, 200, "Sesion cerrada")));
-        // CSRF permanece habilitado, incluida la autenticacion y el cierre de sesion.
+                .accessDeniedHandler((req, res, ex) -> responder(res, 403, motivo(ex))));
         return http.build();
     }
 
+    /** Usa el mensaje propio de PermisosDocente; el generico de Spring ("Access Denied") se traduce. */
+    private static String motivo(Exception ex) {
+        String mensaje = ex.getMessage();
+        return mensaje == null || mensaje.equals("Access Denied") ? "Acceso no permitido" : mensaje;
+    }
+
+    /**
+     * Valida la firma, la fecha, el emisor (tenant de Auth0) y la audiencia (la API) del token.
+     * Las claves publicas se descargan de Auth0 la primera vez que llega un token.
+     * Para pruebas se puede indicar una clave publica local con app.auth.clave-publica.
+     */
+    @Bean
+    JwtDecoder jwtDecoder(@Value("${app.auth.issuer}") String issuer,
+                          @Value("${app.auth.audience}") String audience,
+                          @Value("${app.auth.clave-publica:#{null}}") Resource clavePublica) throws IOException {
+        NimbusJwtDecoder decoder;
+        if (clavePublica != null) {
+            try (InputStream entrada = clavePublica.getInputStream()) {
+                decoder = NimbusJwtDecoder.withPublicKey(RsaKeyConverters.x509().convert(entrada)).build();
+            }
+        } else {
+            decoder = NimbusJwtDecoder.withJwkSetUri(issuer + ".well-known/jwks.json").build();
+        }
+        OAuth2TokenValidator<Jwt> validarAudiencia = new JwtClaimValidator<List<String>>(JwtClaimNames.AUD,
+                audiencias -> audiencias != null && audiencias.contains(audience));
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefaultWithIssuer(issuer), validarAudiencia));
+        return decoder;
+    }
+
     private static void responder(jakarta.servlet.http.HttpServletResponse res, int estado, String mensaje)
-            throws java.io.IOException {
+            throws IOException {
         res.setStatus(estado);
         res.setContentType("application/json");
         res.setCharacterEncoding("UTF-8");
-        res.getWriter().write("{\"mensaje\":\"" + mensaje + "\"}");
+        String seguro = mensaje.replace("\\", "\\\\").replace("\"", "\\\"");
+        res.getWriter().write("{\"mensaje\":\"" + seguro + "\"}");
     }
 }

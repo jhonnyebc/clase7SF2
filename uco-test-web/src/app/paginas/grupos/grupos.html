@@ -1,0 +1,26 @@
+<div class="page-heading">
+  <div>
+    <span class="eyebrow">TU ESPACIO DE TRABAJO</span>
+    <h1>Hola, {{ primerNombre() }}.</h1>
+    <p class="muted">Elige un grupo para consultar sus evaluaciones y registrar notas.</p>
+  </div>
+</div>
+<div class="section-heading">
+  <h2>Mis grupos</h2>
+  <small>{{ sesion.grupos().length }} {{ sesion.grupos().length === 1 ? 'grupo asignado' : 'grupos asignados' }}</small>
+</div>
+@if (sesion.grupos().length) {
+  <div class="group-grid">
+    @for (grupo of sesion.grupos(); track grupo.id; let i = $index) {
+      <article class="group-card">
+        <div class="card-top"><span class="card-icon"><app-icono nombre="book" /></span><span class="card-index">{{ (i + 1).toString().padStart(2, '0') }}</span></div>
+        <h3>{{ grupo.nombre }}</h3>
+        <p>Evaluaciones y registro de calificaciones</p>
+        <div class="card-footer"><a [routerLink]="['/grupo', grupo.id]" [attr.aria-label]="'Abrir ' + grupo.nombre">Abrir grupo <app-icono nombre="arrow" /></a></div>
+      </article>
+    }
+  </div>
+} @else {
+  <div class="panel"><div class="empty"><app-icono nombre="book" /><h3>Aún no tienes grupos</h3><p>Cuando tengas un grupo asignado, lo encontrarás aquí.</p></div></div>
+}
+<div class="tip"><app-icono nombre="info" /><p>En cada evaluación puedes consultar las notas registradas e identificar a los estudiantes que aún están pendientes.</p></div>

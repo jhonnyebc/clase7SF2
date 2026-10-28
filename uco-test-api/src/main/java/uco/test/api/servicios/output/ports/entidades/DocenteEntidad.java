@@ -7,15 +7,29 @@ public class DocenteEntidad {
     private String identificacion;
     private String nombres;
     private String apellidos;
+    private String correo;
 
     public DocenteEntidad() {
     }
 
     public DocenteEntidad(UUID id, String identificacion, String nombres, String apellidos) {
+        this(id, identificacion, nombres, apellidos, null);
+    }
+
+    public DocenteEntidad(UUID id, String identificacion, String nombres, String apellidos, String correo) {
         this.id = id;
         this.identificacion = identificacion;
         this.nombres = nombres;
         this.apellidos = apellidos;
+        this.correo = correo;
+    }
+
+    public String getCorreo() {
+        return correo;
+    }
+
+    public void setCorreo(String correo) {
+        this.correo = correo;
     }
 
     public UUID getId() {

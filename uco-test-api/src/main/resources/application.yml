@@ -2,7 +2,7 @@ spring:
   application:
     name: uco-test-api
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5433/ucotestapi}
+    url: ${DB_URL:jdbc:postgresql://localhost:5434/ucotestapi}
     username: ${DB_USERNAME:ucotest}
     password: ${DB_PASSWORD:ucotest}
   jpa:
@@ -18,16 +18,13 @@ spring:
 app:
   cors:
     origenes-permitidos: ${CORS_ORIGENES:http://localhost:4200}
-  demo:
-    usuarios: ${DEMO_USUARIOS:false}
-    clave-ana: ${DEMO_CLAVE_ANA:}
-    clave-carlos: ${DEMO_CLAVE_CARLOS:}
+  auth:
+    # Tenant de Auth0 (termina en /) y la API registrada en Auth0. No son secretos.
+    issuer: ${AUTH0_ISSUER:https://dev-x3tskzc0kemi5tlv.us.auth0.com/}
+    audience: ${AUTH0_AUDIENCE:https://uco-test-api}
+    # Claim que agrega la Action "Agregar correo al token" en Auth0.
+    claim-correo: https://uco-test-api/email
 
 server:
-  servlet:
-    session:
-      timeout: 30m
-      cookie:
-        http-only: true
-        same-site: lax
-        secure: ${SESSION_COOKIE_SECURE:false}
+  # 8080 lo usa el Keycloak de otro proyecto en este equipo.
+  port: ${PORT:8081}

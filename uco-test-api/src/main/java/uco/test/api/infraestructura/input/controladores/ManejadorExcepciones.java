@@ -11,6 +11,12 @@ import java.util.Map;
 @RestControllerAdvice
 public class ManejadorExcepciones {
 
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> manejarCuerpoInvalido() {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error",
+                "Los datos enviados no tienen un formato válido. Revisa los identificadores y la calificación."));
+    }
+
     @ExceptionHandler(uco.test.api.transversal.excepcion.NotaYaRegistradaException.class)
     public ResponseEntity<Map<String, String>> manejarNotaDuplicada(
             uco.test.api.transversal.excepcion.NotaYaRegistradaException excepcion) {

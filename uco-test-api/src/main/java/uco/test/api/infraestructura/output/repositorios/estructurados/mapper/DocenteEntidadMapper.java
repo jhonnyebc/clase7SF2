@@ -15,7 +15,8 @@ public class DocenteEntidadMapper implements EntidadMapper<DocenteEntidad, Docen
                 entidadJPA.getId(),
                 entidadJPA.getIdentificacion(),
                 entidadJPA.getNombres(),
-                entidadJPA.getApellidos());
+                entidadJPA.getApellidos(),
+                entidadJPA.getCorreo());
     }
 
     @Override
@@ -27,6 +28,7 @@ public class DocenteEntidadMapper implements EntidadMapper<DocenteEntidad, Docen
                 entidad.getId(),
                 entidad.getIdentificacion(),
                 entidad.getNombres(),
-                entidad.getApellidos());
+                entidad.getApellidos(),
+                entidad.getCorreo());
     }
 }

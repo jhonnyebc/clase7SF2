@@ -1,51 +1,37 @@
-# Fase 3: interfaz local de Aula
+# Interfaz: Angular (uco-test-web)
 
-La interfaz se sirve desde Spring Boot. No necesita instalar Node ni ejecutar un frontend separado.
+El frontend es un proyecto Angular 22 aparte, en la carpeta `uco-test-web`. Usa el SDK oficial `@auth0/auth0-angular` para el login.
 
 ## Abrir la aplicación
 
-1. Iniciar Docker Desktop y ejecutar `docker compose up -d postgres` en `uco-test-api`.
-2. Desde la carpeta raíz `clase7SF2`, ejecutar `./iniciar.ps1` en PowerShell. También puede iniciarse `UcoTestApiApplication` desde IntelliJ.
-3. Abrir `http://localhost:8080` e iniciar sesión.
+1. PostgreSQL y la API iniciados (ver `README.md` en la carpeta raíz).
+2. En `uco-test-web`: `npm install` (solo la primera vez) y `npm start`.
+3. Abrir `http://localhost:4200` y pulsar **Iniciar sesión**.
 
-El script usa las rutas de JDK 27 e IntelliJ de este equipo. Admite otro puerto: `./iniciar.ps1 -Puerto 18080`.
-Las cuentas de demostración `ana` y `carlos` fueron creadas en PostgreSQL durante la verificación. Sus contraseñas aleatorias se entregan por separado y no forman parte del código fuente.
-Para crear usuarios en una base nueva, seguir `INICIAR-SESION.md`.
+## Estructura
 
-## Recorrido implementado
+| Archivo | Para qué |
+| --- | --- |
+| `src/app/nucleo/configuracion.ts` | URL de la API y datos públicos de Auth0. |
+| `src/app/app.config.ts` | Auth0 (`provideAuth0`) y el interceptor que agrega el token solo a las peticiones a la API. |
+| `src/app/nucleo/api.ts` | Llamadas a la API y mensajes de error. |
+| `src/app/nucleo/sesion.ts` | Docente conectado, sus grupos y cierre de sesión. |
+| `src/app/nucleo/sesion-guard.ts` | Sin sesión, redirige a `/login`. |
+| `src/app/paginas/*` | Pantallas: login, grupos, evaluaciones, estudiantes (registro de nota) y promedios. |
+| `src/app/compartido/formato.ts` | Formato de números y fechas, búsqueda sin tildes y validación de la nota. |
 
-- Login y cierre de sesión conectados con la API; recuperación de sesión al recargar.
-- Mis grupos, lista de evaluaciones y estudiantes de cada evaluación.
-- Búsqueda por nombre o identificación, ignorando tildes y mayúsculas.
-- Filtros por pendientes, registradas e inactivos.
-- Cantidades de estudiantes y notas registradas/pendientes.
-- Evaluaciones vencidas y estudiantes inactivos con una explicación visible.
-- Formulario de nota con validación de 0 a 5 y máximo un decimal; admite coma o punto.
-- Botón bloqueado durante el guardado, confirmación de éxito y conservación del valor ante errores.
-- Diseño adaptable, etiquetas de formulario, diálogo accesible y acceso por teclado.
-- Manejo de errores de conexión y regreso al login cuando termina la sesión.
+## Recorrido
 
-El formulario de registro adelanta parte de la fase 4. La edición de notas registradas no está incluida.
+- **Login**: redirige a la pantalla de Auth0 y vuelve a la aplicación. La sesión se conserva al recargar.
+- **Mis grupos**: solo los grupos del docente conectado.
+- **Evaluaciones del grupo**: porcentaje, vigencia y aviso si los porcentajes no suman 100 %.
+- **Estudiantes de una evaluación**: búsqueda sin tildes ni mayúsculas, filtros (pendientes, registradas, inactivos) y botón **Registrar nota** solo para estudiantes activos, sin nota y con la evaluación vigente.
+- **Registrar nota**: de 0 a 5 con máximo un decimal (coma o punto). El botón se bloquea mientras guarda y el mensaje del servidor aparece si algo falla (por ejemplo, 409 si otra persona ya la registró).
+- **Promedios**: acumulado, definitiva y detalle por evaluación.
+- **Cerrar sesión**: cierra la sesión en Auth0 y vuelve al login.
 
-## Porcentajes
+Las notas registradas no se pueden editar desde la interfaz, y los porcentajes solo se consultan.
 
-Se agregó `porcentaje` a las evaluaciones, al mapeo de persistencia y a las respuestas de la API.
-La ruta protegida `GET /api/v1/grupos/{idGrupo}/ponderacion` indica total, número de evaluaciones sin porcentaje, validez y mensaje.
-Una configuración válida requiere evaluaciones con porcentaje mayor que 0 y menor o igual a 100, sumando exactamente 100.
-Se emplea BigDecimal para validar los decimales.
+## Pruebas
 
-Los datos de demostración inicializan únicamente porcentajes ausentes: parcial del Grupo 1 al 70 %, quiz al 30 % y la evaluación del Grupo 2 al 100 %.
-No se reemplazan porcentajes ya configurados. Las evaluaciones vencidas también forman parte del total.
-
-La interfaz permite consultar los porcentajes; no editarlos. El cálculo y la presentación del promedio ponderado individual están implementados en la fase 4. Consultar `PROMEDIOS.md` para uso y arranque sin scripts.
-
-## Verificación histórica de fase 3
-
-Actualización de fase 4: 20 pruebas aprobadas con PostgreSQL el 20 de octubre de 2026. La revisión visual del 21 de octubre en H2 temporal confirmó registro de 4,2 al 70 %, acumulado 2,94, definitiva pendiente y desglose. No se modificaron notas reales para esa revisión.
-
-La suite incluye 12 pruebas: 8 de integración HTTP y 4 de reglas de ponderación. Se verifican también los recursos públicos de la interfaz y la protección de sus datos.
-La suite pasó con PostgreSQL en un esquema temporal independiente. Los datos de prueba se eliminan al cerrar la suite.
-El JavaScript pasó la comprobación de sintaxis `node --check`.
-
-Revisión del 20 de octubre de 2026: las 12 pruebas también pasaron con H2. En el navegador se verificaron login, navegación, porcentajes, búsqueda con tildes, rechazo de 5,5, guardado de 4,2, consulta tras recarga y logout. El registro visual se realizó en una base H2 temporal, sin modificar notas en PostgreSQL.
-Tras reiniciar PostgreSQL se volvió a verificar el arranque normal, el login de Ana, sus grupos, la ponderación válida de 100 % y el cierre de sesión por HTTP.
+`npm test -- --watch=false` ejecuta las pruebas de `formato.spec.ts` (validación de la nota, formato y búsqueda).

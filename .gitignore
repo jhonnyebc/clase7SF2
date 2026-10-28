@@ -36,6 +36,11 @@ target/
 *.class
 *.log
 
+### Angular (uco-test-web) ###
+node_modules/
+dist/
+.angular/
+
 ### Configuración privada y datos locales ###
 .env
 .env.*
